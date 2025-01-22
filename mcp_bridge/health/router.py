@@ -19,7 +19,7 @@ async def health():
             unhealthy_events=manager.get_unhealthy_events(),
         )
         # Return JSONResponse with custom status code and serialized content
-        return JSONResponse(content=response.dict(), status_code=500)
+        return JSONResponse(content=response.model_dump(), status_code=500)
 
     # Create and return HealthCheckResponse for healthy state
     response = HealthCheckResponse(
