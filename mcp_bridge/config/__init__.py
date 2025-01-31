@@ -1,3 +1,4 @@
+from mcp_bridge.config.env_subst import substitute_env_vars
 from mcp_bridge.config.initial import initial_settings
 from mcp_bridge.config.final import Settings
 from typing import Any, Callable
@@ -37,6 +38,8 @@ if initial_settings.load_config:
     result: dict = {}
     for cfg in configs:
         always_merger.merge(result, cfg)
+
+    result = substitute_env_vars(result)
 
     # build the config
     try:
