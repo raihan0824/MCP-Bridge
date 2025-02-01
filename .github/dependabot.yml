@@ -4,16 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    versioning-strategy: "increase"
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
-    versioning-strategy: "increase"
 
   - package-ecosystem: "github-actions"
     directory: ".github/workflows"
     schedule:
       interval: "daily"
-    versioning-strategy: "increase"
