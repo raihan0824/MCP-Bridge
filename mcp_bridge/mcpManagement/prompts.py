@@ -19,7 +19,7 @@ async def get_prompts() -> dict[str, ListPromptsResult]:
 
 
 @router.post("/{prompt_name}")
-async def get_prompt(prompt_name: str, args: dict[str, str] = {}) -> GetPromptResult:
+async def get_prompt(prompt_name: str, args: dict[str, Any] = {}) -> GetPromptResult:
     """Evaluate a prompt"""
 
     client = await ClientManager.get_client_from_prompt(prompt_name)
