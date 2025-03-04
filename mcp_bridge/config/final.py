@@ -73,6 +73,11 @@ class Settings(BaseSettings):
         default_factory=lambda: Network.model_construct(),
         description="network config",
     )
+    
+    api_key: str = Field(
+        default="",
+        description="API key for authenticating requests to the MCP Bridge server"
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="MCP_BRIDGE__",

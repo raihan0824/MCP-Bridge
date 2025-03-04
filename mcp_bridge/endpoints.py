@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from lmos_openai_types import CreateChatCompletionRequest, CreateCompletionRequest
 
@@ -10,8 +10,9 @@ from mcp_bridge.openai_clients import (
 )
 
 from mcp_bridge.openapi_tags import Tag
+from mcp_bridge.auth import get_api_key
 
-router = APIRouter(prefix="/v1", tags=[Tag.openai])
+router = APIRouter(prefix="/v1", tags=[Tag.openai], dependencies=[Depends(get_api_key)])
 
 
 @router.post("/completions")
