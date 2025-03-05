@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mcp_bridge.endpoints import router as endpointRouter
 from mcp_bridge.mcpManagement import router as mcpRouter
 from mcp_bridge.health import router as healthRouter
@@ -17,6 +18,15 @@ def create_app() -> FastAPI:
         version=version,
         lifespan=lifespan,
         openapi_tags=tags_metadata,
+    )
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allows all origins
+        allow_credentials=True,
+        allow_methods=["*"],  # Allows all methods
+        allow_headers=["*"],  # Allows all headers
     )
 
     app.include_router(endpointRouter)
