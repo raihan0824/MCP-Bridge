@@ -5,5 +5,5 @@ from mcp_bridge.auth import get_api_key
 
 __all__ = ["router"]
 
-router = APIRouter(prefix="/mcp-server", tags=[Tag.mcp_server], dependencies=[Depends(get_api_key)])
+router = APIRouter(prefix="/mcp-server", tags=[Tag.mcp_server])
 router.include_router(sse_router)
