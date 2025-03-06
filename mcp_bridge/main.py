@@ -21,6 +21,12 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         openapi_tags=tags_metadata,
     )
+
+    # show auth data
+    if config.security.auth.enabled:
+        logger.info("Authentication is enabled")
+    else:
+        logger.info("Authentication is disabled")
     
     # Add CORS middleware
     if config.security.CORS.enabled:
