@@ -16,4 +16,5 @@ services:
     volumes:
       - ./config.json:/mcp_bridge/config.json
       - ./demo_server.py:/mcp_bridge/demo_server.py
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
