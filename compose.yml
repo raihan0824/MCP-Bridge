@@ -17,4 +17,5 @@ services:
       - ./config.json:/mcp_bridge/config.json
       - ./demo_server.py:/mcp_bridge/demo_server.py
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./config:/root/.kube/config
     restart: unless-stopped
