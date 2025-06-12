@@ -12,7 +12,8 @@ RUN apt-get install -y --no-install-recommends nodejs
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
     rm kubectl
-    
+
+
 COPY pyproject.toml .
 
 ## FOR GHCR BUILD PIPELINE
@@ -21,6 +22,9 @@ COPY README.md README.md
 
 
 RUN uv sync
+
+# install postgre mcp
+RUN uv pip install postgres-mcp
 
 COPY mcp_bridge mcp_bridge
 
