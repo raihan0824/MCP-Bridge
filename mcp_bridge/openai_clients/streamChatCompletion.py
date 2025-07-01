@@ -19,6 +19,15 @@ from httpx_sse import aconnect_sse
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 
+def is_valid_json(json_string: str) -> bool:
+    """Check if a string is valid JSON"""
+    try:
+        json.loads(json_string)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+
 async def streaming_chat_completions(request: CreateChatCompletionRequest):
     # raise NotImplementedError("Streaming Chat Completion is not supported")
 
@@ -160,54 +169,81 @@ async def chat_completions(request: CreateChatCompletionRequest):
             fully_done = True
             continue
 
-        logger.debug("tool calls found")
-        logger.debug(
-            f"{tool_call_name=} {tool_call_json=}"
-        )  # this should not be error but its easier to debug
-
-        # add received message to the history
-        msg = ChatCompletionRequestMessage(
-            role="assistant",
-            content=response_content,
-            tool_calls=[
-                ChatCompletionMessageToolCall(
-                    id=tool_call_id,
-                    type="function",
-                    function=Function1(name=tool_call_name, arguments=tool_call_json),
-                )
-            ],
-        )  # type: ignore
-        request.messages.append(msg)
-
-        #### MOST OF THIS IS COPY PASTED FROM CHAT_COMPLETIONS
-        # FIXME: this can probably be done in parallel using asyncio gather
-        tool_call_result = await call_tool(tool_call_name, tool_call_json)
-        if tool_call_result is None:
+        # Check if we have tool call content but incomplete JSON
+        if tool_call_name and not is_valid_json(tool_call_json):
+            logger.warning(f"Incomplete JSON for tool call {tool_call_name}, received so far: {tool_call_json}")
+            logger.warning(f"Finish reason was: {last.choices[0].finish_reason.value}")
+            
+            # Add a message explaining the tool call failure so LLM can respond
+            failure_msg = ChatCompletionRequestMessage(
+                role="user",
+                content=f"The tool call '{tool_call_name}' failed. Please just explain what happened and don't do any actions."
+            )
+            request.messages.append(failure_msg)
+            
+            # Continue the conversation instead of ending it
+            logger.info("Added failure explanation message, continuing conversation")
+            # Don't set fully_done = True, let the LLM respond to the failure
             continue
 
-        logger.debug(
-            f"tool call result for {tool_call_name}: {tool_call_result.model_dump()}"
-        )
+        # Only proceed with tool calls if we have valid JSON
+        if tool_call_name and tool_call_json:
+            logger.debug("tool calls found")
+            logger.debug(f"{tool_call_name=} {tool_call_json=}")
 
-        logger.debug(f"tool call result content: {tool_call_result.content}")
+            # Validate that tool_call_json is complete before processing
+            if not is_valid_json(tool_call_json):
+                logger.error(f"Invalid JSON for tool call {tool_call_name}: {tool_call_json}")
+                logger.error("Skipping tool call due to malformed JSON")
+                fully_done = True
+                continue
 
-        tools_content = [
-            {"type": "text", "text": part.text}
-            for part in filter(lambda x: x.type == "text", tool_call_result.content)
-        ]
-        if len(tools_content) == 0:
-            tools_content = [{"type": "text", "text": "the tool call result is empty"}]
-        request.messages.append(
-            ChatCompletionRequestMessage.model_validate(
-                {
-                    "role": "tool",
-                    "content": tools_content,
-                    "tool_call_id": tool_call_id,
-                }
+            # add received message to the history
+            msg = ChatCompletionRequestMessage(
+                role="assistant",
+                content=response_content,
+                tool_calls=[
+                    ChatCompletionMessageToolCall(
+                        id=tool_call_id,
+                        type="function",
+                        function=Function1(name=tool_call_name, arguments=tool_call_json),
+                    )
+                ],
+            )  # type: ignore
+            request.messages.append(msg)
+
+            #### MOST OF THIS IS COPY PASTED FROM CHAT_COMPLETIONS
+            # FIXME: this can probably be done in parallel using asyncio gather
+            tool_call_result = await call_tool(tool_call_name, tool_call_json)
+            if tool_call_result is None:
+                continue
+
+            logger.debug(
+                f"tool call result for {tool_call_name}: {tool_call_result.model_dump()}"
             )
-        )
 
-        logger.debug("sending next iteration of chat completion request")
+            logger.debug(f"tool call result content: {tool_call_result.content}")
+
+            tools_content = [
+                {"type": "text", "text": part.text}
+                for part in filter(lambda x: x.type == "text", tool_call_result.content)
+            ]
+            if len(tools_content) == 0:
+                tools_content = [{"type": "text", "text": "the tool call result is empty"}]
+            request.messages.append(
+                ChatCompletionRequestMessage.model_validate(
+                    {
+                        "role": "tool",
+                        "content": tools_content,
+                        "tool_call_id": tool_call_id,
+                    }
+                )
+            )
+
+            logger.debug("sending next iteration of chat completion request")
+        else:
+            # No tool calls found, conversation is complete
+            fully_done = True
 
     # when done, send the final event
     logger.debug("sending final event")

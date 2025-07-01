@@ -43,8 +43,10 @@ async def call_tool(
 
     try:
         tool_call_args = json.loads(tool_call_json)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         logger.error(f"failed to decode json for {tool_call_name}")
+        logger.error(f"JSON content: {tool_call_json}")
+        logger.error(f"JSON decode error: {e}")
         return None
 
     return await session.call_tool(tool_call_name, tool_call_args, timeout)
